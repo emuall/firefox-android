@@ -63,7 +63,7 @@ open class StrictModeManager(
     fun enableStrictMode(setPenaltyDeath: Boolean) {
         if (isEnabledByBuildConfig) {
             val threadPolicy = StrictMode.ThreadPolicy.Builder()
-                .detectAll()
+//                .detectAll()
                 .penaltyLog()
             if (setPenaltyDeath) {
                 threadPolicy.penaltyDeathWithIgnores()
