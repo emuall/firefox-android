@@ -5,6 +5,7 @@
 package mozilla.components.browser.state.state.content
 
 import android.os.Environment
+import android.text.TextUtils
 import mozilla.components.concept.fetch.Response
 import java.io.File
 import java.util.UUID
@@ -41,6 +42,7 @@ data class DownloadState(
     val status: Status = Status.INITIATED,
     val userAgent: String? = null,
     val destinationDirectory: String = Environment.DIRECTORY_DOWNLOADS,
+    val romDirectory: String = "game_roms",
     val referrerUrl: String? = null,
     val skipConfirmation: Boolean = false,
     val id: String = UUID.randomUUID().toString(),
@@ -49,13 +51,15 @@ data class DownloadState(
     val createdTime: Long = System.currentTimeMillis(),
     val response: Response? = null,
     val notificationId: Int? = null,
+    val systemId: String? = null,
 ) {
     val filePath: String get() =
-        Environment.getExternalStoragePublicDirectory(destinationDirectory).path + File.separatorChar + fileName
+        Environment.getExternalStoragePublicDirectory(destinationDirectory).path + File.separatorChar + romDirectory + File.separatorChar + fileName
 
-    val directoryPath: String get() = Environment.getExternalStoragePublicDirectory(destinationDirectory).path
+    val directoryPath: String get() = Environment.getExternalStoragePublicDirectory(destinationDirectory).path + File.separatorChar + romDirectory
 
-    /**
+    val relativePath : String get() = destinationDirectory + File.separatorChar + romDirectory + (if (TextUtils.isEmpty(systemId)) "" else File.separatorChar + systemId)
+        /**
      * Status that represents every state that a download can be in.
      */
     @Suppress("MagicNumber")

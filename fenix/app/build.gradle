@@ -34,7 +34,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "org.mozilla"
+        applicationId "org.sean"
         minSdkVersion Config.minSdkVersion
         targetSdkVersion Config.targetSdkVersion
         versionCode 1
@@ -78,6 +78,13 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            storeFile file("../../../sign_xl")
+            storePassword "xielei987xl"
+        }
+    }
+
     def releaseTemplate = {
         // We allow disabling optimization by passing `-PdisableOptimization` to gradle. This is used
         // in automation for UI testing non-debug builds.
@@ -88,10 +95,12 @@ android {
 
         // Changing the build config can cause files that depend on BuildConfig.java to recompile
         // so we only set the git hash in release builds to avoid possible recompilation in debug builds.
-        buildConfigField "String", "GIT_HASH", "\"${Config.getGitHash()}\""
+        buildConfigField "String", "GIT_HASH", "89f2a5b25c"
 
         if (gradle.hasProperty("localProperties.autosignReleaseWithDebugKey")) {
             signingConfig signingConfigs.debug
+        } else {
+            signingConfig signingConfigs.release
         }
 
         if (gradle.hasProperty("localProperties.debuggable")) {
@@ -133,7 +142,7 @@ android {
         }
         release releaseTemplate >> {
             buildConfigField "boolean", "USE_RELEASE_VERSIONING", "true"
-            applicationIdSuffix ".firefox"
+            applicationIdSuffix ".plugin.downloader"
             def deepLinkSchemeValue = "fenix"
             buildConfigField "String", "DEEP_LINK_SCHEME", "\"$deepLinkSchemeValue\""
             manifestPlaceholders = [

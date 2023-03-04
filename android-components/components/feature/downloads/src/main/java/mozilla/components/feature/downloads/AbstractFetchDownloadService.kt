@@ -702,6 +702,7 @@ abstract class AbstractFetchDownloadService : Service() {
             return
         }
 
+        String systemId =
         response.body.useStream { inStream ->
             var copyInChuckStatus: CopyInChuckStatus? = null
             val newDownloadState = download.withResponse(response.headers, inStream)
@@ -876,7 +877,7 @@ abstract class AbstractFetchDownloadService : Service() {
         return download.fileName?.let {
             download.copy(
                 fileName = DownloadUtils.uniqueFileName(
-                    Environment.getExternalStoragePublicDirectory(download.destinationDirectory),
+                    File(download.filePath),
                     it,
                 ),
             )
@@ -888,6 +889,9 @@ abstract class AbstractFetchDownloadService : Service() {
     internal fun useFileStreamScopedStorage(download: DownloadState, block: (OutputStream) -> Unit) {
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, download.fileName)
+            put(MediaStore.Downloads.DATA, download.filePath)
+            //下载到Download目录
+            put(MediaStore.Downloads.RELATIVE_PATH, download.relativePath)
             put(
                 MediaStore.Downloads.MIME_TYPE,
                 getSafeContentType(context, download.filePath, download.contentType),
@@ -898,7 +902,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
         val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         val resolver = applicationContext.contentResolver
-        var downloadUri = queryDownloadMediaStore(applicationContext, download)
+        var downloadUri =  queryDownloadMediaStore(applicationContext, download)
 
         if (downloadUri == null) {
             downloadUri = resolver.insert(collection, values)
@@ -962,6 +966,21 @@ abstract class AbstractFetchDownloadService : Service() {
             }
         }
 
+//        internal fun getDownloadMediaStore(context: Context, download: DownloadState) :Uri? {
+//            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                ContentValues().run {
+//                    put(MediaStore.MediaColumns.DISPLAY_NAME, download.fileName) //文件名
+//                    //取contentType响应头作为文件类型
+//                    put(MediaStore.MediaColumns.MIME_TYPE, response.body?.contentType().toString())
+//                    //下载到Download目录
+//                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+//                    val uri = queryUri ?: MediaStore.Downloads.EXTERNAL_CONTENT_URI
+//                    context.contentResolver.insert(uri, this)
+//                } ?: throw NullPointerException("Uri insert fail, Please change the file name")
+//            } else {
+//                Uri.fromFile(File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), displayName))
+//            }
+//        }
         @TargetApi(Build.VERSION_CODES.Q)
         @VisibleForTesting
         internal fun queryDownloadMediaStore(applicationContext: Context, download: DownloadState): Uri? {
