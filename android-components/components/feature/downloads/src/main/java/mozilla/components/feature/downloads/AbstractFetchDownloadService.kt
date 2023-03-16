@@ -702,7 +702,6 @@ abstract class AbstractFetchDownloadService : Service() {
             return
         }
 
-        String systemId =
         response.body.useStream { inStream ->
             var copyInChuckStatus: CopyInChuckStatus? = null
             val newDownloadState = download.withResponse(response.headers, inStream)
