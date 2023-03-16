@@ -182,14 +182,11 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 // Generate Kotlin code for the Focus Glean metrics.
 // -------------------------------------------------------------------------------------------------
 apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
-apply plugin: "org.mozilla.components.nimbus-gradle-plugin"
+apply plugin: "org.mozilla.appservices.nimbus-gradle-plugin"
 
 nimbus {
     // The path to the Nimbus feature manifest file
     manifestFile = "nimbus.fml.yaml"
-    // The fully qualified class name for the generated features.
-    // If the classname begins with a '.' this is taken as a suffix to the app's package name
-    destinationClass = ".nimbus.FocusNimbus"
     // Map from the variant name to the channel as experimenter and nimbus understand it.
     // If nimbus's channels were accurately set up well for this project, then this
     // shouldn't be needed.
@@ -246,6 +243,7 @@ dependencies {
     implementation FocusDependencies.androidx_recyclerview
     implementation FocusDependencies.androidx_savedstate
     implementation FocusDependencies.androidx_splashscreen
+    implementation FocusDependencies.androidx_tracing
     implementation FocusDependencies.androidx_transition
     implementation FocusDependencies.androidx_work_ktx
 
@@ -364,7 +362,6 @@ dependencies {
     testImplementation FocusDependencies.androidx_test_rules
 
     androidTestImplementation FocusDependencies.androidx_test_core_ktx
-    androidTestImplementation FocusDependencies.androidx_tracing
     androidTestImplementation FocusDependencies.androidx_junit_ktx
     androidTestImplementation FocusDependencies.androidx_uiautomator
     androidTestImplementation FocusDependencies.androidx_test_runner

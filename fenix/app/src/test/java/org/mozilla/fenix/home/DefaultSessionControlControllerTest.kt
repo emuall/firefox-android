@@ -11,11 +11,8 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.spyk
-import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -404,7 +401,7 @@ class DefaultSessionControlControllerTest {
         verify {
             activity.openToBrowserAndLoad(
                 searchTermOrURL = SupportUtils.getGenericSumoURLForTopic
-                (SupportUtils.SumoTopic.PRIVATE_BROWSING_MYTHS),
+                    (SupportUtils.SumoTopic.PRIVATE_BROWSING_MYTHS),
                 newTab = true,
                 from = BrowserDirection.FromHome,
             )
@@ -958,34 +955,6 @@ class DefaultSessionControlControllerTest {
     }
 
     @Test
-    fun handleStartBrowsingClicked() {
-        var hideOnboardingInvoked = false
-        createController(hideOnboarding = { hideOnboardingInvoked = true }).handleStartBrowsingClicked()
-
-        assertTrue(hideOnboardingInvoked)
-    }
-
-    @Test
-    fun handleReadPrivacyNoticeClicked() {
-        mockkObject(SupportUtils)
-        val urlCaptor = slot<String>()
-        every { SupportUtils.createCustomTabIntent(any(), capture(urlCaptor)) } returns mockk()
-
-        createController().handleReadPrivacyNoticeClicked()
-
-        verify {
-            activity.startActivity(
-                any(),
-            )
-        }
-        assertEquals(
-            SupportUtils.getMozillaPageUrl(SupportUtils.MozillaPage.PRIVATE_NOTICE),
-            urlCaptor.captured,
-        )
-        unmockkObject(SupportUtils)
-    }
-
-    @Test
     fun handleToggleCollectionExpanded() {
         val collection = mockk<TabCollection>()
         createController().handleToggleCollectionExpanded(collection, true)
@@ -1047,9 +1016,31 @@ class DefaultSessionControlControllerTest {
     }
 
     @Test
+    fun handleNavigateSearch() {
+        assertNull(Events.searchBarTapped.testGetValue())
+
+        createController().handleNavigateSearch()
+
+        assertNotNull(Events.searchBarTapped.testGetValue())
+        val recordedEvents = Events.searchBarTapped.testGetValue()!!
+        assertEquals(1, recordedEvents.size)
+        assertEquals("HOME", recordedEvents.single().extra?.getValue("source"))
+
+        verify {
+            navController.navigate(
+                match<NavDirections> { it.actionId == R.id.action_global_search_dialog },
+                any<NavOptions>(),
+            )
+        }
+    }
+
+    @Test
     fun handleRemoveCollectionsPlaceholder() {
         createController().handleRemoveCollectionsPlaceholder()
 
+        val recordedEvents = Collections.placeholderCancel.testGetValue()!!
+        assertEquals(1, recordedEvents.size)
+        assertEquals(null, recordedEvents.single().extra)
         verify {
             settings.showCollectionsPlaceholderOnHome = false
             appStore.dispatch(AppAction.RemoveCollectionsPlaceholder)
@@ -1320,7 +1311,6 @@ class DefaultSessionControlControllerTest {
     }
 
     private fun createController(
-        hideOnboarding: () -> Unit = { },
         registerCollectionStorageObserver: () -> Unit = { },
         showTabTray: () -> Unit = { },
         removeCollectionWithUndo: (tabCollection: TabCollection) -> Unit = { },
@@ -1339,7 +1329,6 @@ class DefaultSessionControlControllerTest {
             appStore = appStore,
             navController = navController,
             viewLifecycleScope = scope,
-            hideOnboarding = hideOnboarding,
             registerCollectionStorageObserver = registerCollectionStorageObserver,
             removeCollectionWithUndo = removeCollectionWithUndo,
             showTabTray = showTabTray,

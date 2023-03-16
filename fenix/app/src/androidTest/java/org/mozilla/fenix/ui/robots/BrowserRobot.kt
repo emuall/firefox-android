@@ -395,15 +395,12 @@ class BrowserRobot {
         searchText.click()
     }
 
-    fun snackBarButtonClick() {
-        val switchButton =
-            mDevice.findObject(
-                UiSelector()
-                    .resourceId("$packageName:id/snackbar_btn"),
-            )
-        switchButton.waitForExists(waitingTime)
-        switchButton.clickAndWaitForNewWindow(waitingTime)
-    }
+    fun clickSnackbarButton(expectedText: String) =
+        itemWithResIdAndText("$packageName:id/snackbar_btn", expectedText)
+            .also {
+                it.waitForExists(waitingTime)
+                it.click()
+            }
 
     fun clickSubmitLoginButton() = clickPageObject(webPageItemWithResourceId("submit"))
 
@@ -539,8 +536,23 @@ class BrowserRobot {
     }
 
     fun clickSelectAddressButton() {
-        selectAddressButton.waitForExists(waitingTime)
-        selectAddressButton.clickAndWaitForNewWindow(waitingTime)
+        for (i in 1..RETRY_COUNT) {
+            try {
+                assertTrue(selectAddressButton.waitForExists(waitingTime))
+                selectAddressButton.clickAndWaitForNewWindow(waitingTime)
+
+                break
+            } catch (e: AssertionError) {
+                // Retrying, in case we hit https://bugzilla.mozilla.org/show_bug.cgi?id=1816869
+                // This should be removed when the bug is fixed.
+                if (i == RETRY_COUNT) {
+                    throw e
+                } else {
+                    clickPageObject(webPageItemWithResourceId("city"))
+                    clickPageObject(webPageItemWithResourceId("country"))
+                }
+            }
+        }
     }
 
     fun verifySelectAddressButtonExists(exists: Boolean) = assertItemWithResIdExists(selectAddressButton, exists = exists)
@@ -1008,6 +1020,12 @@ class BrowserRobot {
                 it.click()
             }
 
+    fun verifyFindInPageBar(exists: Boolean) =
+        assertItemWithResIdExists(
+            itemWithResId("$packageName:id/findInPageView"),
+            exists = exists,
+        )
+
     class Transition {
         private fun threeDotButton() = onView(
             allOf(
@@ -1026,9 +1044,10 @@ class BrowserRobot {
         }
 
         fun openNavigationToolbar(interact: NavigationToolbarRobot.() -> Unit): NavigationToolbarRobot.Transition {
-            mDevice.findObject(UiSelector().resourceId("$packageName:id/toolbar"))
-                .waitForExists(waitingTime)
+            navURLBar().waitForExists(waitingTime)
             navURLBar().click()
+            mDevice.findObject(UiSelector().resourceId("$packageName:id/mozac_browser_toolbar_url_view"))
+                .waitForExists(waitingTime)
 
             NavigationToolbarRobot().interact()
             return NavigationToolbarRobot.Transition()
