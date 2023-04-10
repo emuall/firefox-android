@@ -90,6 +90,13 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            storeFile file("../../../sign_xl")
+            storePassword "xielei987xl"
+        }
+    }
+
     def releaseTemplate = {
         // We allow disabling optimization by passing `-PdisableOptimization` to gradle. This is used
         // in automation for UI testing non-debug builds.
