@@ -338,22 +338,25 @@ object TestHelper {
         }
     }
 
-    fun grantPermission() {
+    // Permission allow dialogs differ on various Android APIs
+    fun grantSystemPermission() {
         if (Build.VERSION.SDK_INT >= 23) {
-            mDevice.findObject(
-                By.text(
-                    when (Build.VERSION.SDK_INT) {
-                        Build.VERSION_CODES.R -> Pattern.compile(
-                            "WHILE USING THE APP",
-                            Pattern.CASE_INSENSITIVE,
-                        )
-                        else -> Pattern.compile("Allow", Pattern.CASE_INSENSITIVE)
-                    },
-                ),
-            ).click()
+            if (mDevice.findObject(UiSelector().textContains("While using the app")).waitForExists(
+                    waitingTimeShort,
+                )
+            ) {
+                mDevice.findObject(UiSelector().textContains("While using the app")).click()
+            } else {
+                mDevice.findObject(
+                    UiSelector()
+                        .textContains("Allow")
+                        .className("android.widget.Button"),
+                ).click()
+            }
         }
     }
 
+    // Permission deny dialogs differ on various Android APIs
     fun denyPermission() {
         if (Build.VERSION.SDK_INT >= 23) {
             mDevice.findObject(
