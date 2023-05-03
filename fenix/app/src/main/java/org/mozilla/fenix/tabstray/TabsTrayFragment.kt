@@ -32,6 +32,7 @@ import mozilla.components.feature.downloads.ui.DownloadCancelDialogFragment
 import mozilla.components.feature.tabs.tabstray.TabsFeature
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.telemetry.glean.private.NoExtras
+import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.TabsTray
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.NavGraphDirections
@@ -223,6 +224,8 @@ class TabsTrayFragment : AppCompatDialogFragment() {
                         browserStore = requireComponents.core.store,
                         tabsTrayStore = tabsTrayStore,
                         displayTabsInGrid = requireContext().settings().gridTabView,
+                        isInDebugMode = Config.channel.isDebug ||
+                            requireComponents.settings.showSecretDebugMenuThisSession,
                         shouldShowInactiveTabsAutoCloseDialog =
                         requireContext().settings()::shouldShowInactiveTabsAutoCloseDialog,
                         onTabPageClick = { page ->
@@ -259,7 +262,12 @@ class TabsTrayFragment : AppCompatDialogFragment() {
 
             fabButtonComposeBinding.root.setContent {
                 FirefoxTheme(theme = Theme.getTheme(allowPrivateTheme = false)) {
-                    TabsTrayFab(tabsTrayStore = tabsTrayStore)
+                    TabsTrayFab(
+                        tabsTrayStore = tabsTrayStore,
+                        onNormalTabsFabClicked = tabsTrayInteractor::onNormalTabsFabClicked,
+                        onPrivateTabsFabClicked = tabsTrayInteractor::onPrivateTabsFabClicked,
+                        onSyncedTabsFabClicked = tabsTrayInteractor::onSyncedTabsFabClicked,
+                    )
                 }
             }
         } else {
@@ -290,6 +298,8 @@ class TabsTrayFragment : AppCompatDialogFragment() {
         _tabsTrayBinding = null
         _tabsTrayDialogBinding = null
         _fabButtonBinding = null
+        _tabsTrayComposeBinding = null
+        _fabButtonComposeBinding = null
     }
 
     @Suppress("LongMethod")
@@ -532,25 +542,31 @@ class TabsTrayFragment : AppCompatDialogFragment() {
                 true -> getString(R.string.snackbar_private_tab_closed)
                 false -> getString(R.string.snackbar_tab_closed)
             }
+        val pagePosition = if (isPrivate) Page.PrivateTabs.ordinal else Page.NormalTabs.ordinal
 
-        if (!requireContext().settings().enableTabsTrayToCompose) {
-            lifecycleScope.allowUndo(
-                requireView(),
-                snackbarMessage,
-                getString(R.string.snackbar_deleted_undo),
-                {
-                    requireComponents.useCases.tabsUseCases.undo.invoke()
+        lifecycleScope.allowUndo(
+            view = requireView(),
+            message = snackbarMessage,
+            undoActionTitle = getString(R.string.snackbar_deleted_undo),
+            onCancel = {
+                requireComponents.useCases.tabsUseCases.undo.invoke()
+
+                if (requireContext().settings().enableTabsTrayToCompose) {
+                    tabsTrayStore.dispatch(TabsTrayAction.PageSelected(Page.positionToPage(pagePosition)))
+                } else {
                     tabLayoutMediator.withFeature {
-                        it.selectTabAtPosition(
-                            if (isPrivate) Page.PrivateTabs.ordinal else Page.NormalTabs.ordinal,
-                        )
+                        it.selectTabAtPosition(pagePosition)
                     }
-                },
-                operation = { },
-                elevation = ELEVATION,
-                anchorView = if (fabButtonBinding.newTabButton.isVisible) fabButtonBinding.newTabButton else null,
-            )
-        }
+                }
+            },
+            operation = { },
+            elevation = ELEVATION,
+            anchorView = when {
+                requireContext().settings().enableTabsTrayToCompose -> fabButtonComposeBinding.root
+                fabButtonBinding.newTabButton.isVisible -> fabButtonBinding.newTabButton
+                else -> null
+            },
+        )
     }
 
     @VisibleForTesting
