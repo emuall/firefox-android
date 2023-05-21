@@ -260,21 +260,6 @@ features:
         value:
           enabled: true
 
-  client-deduplication:
-    description: A feature to control the sending of the client-deduplication ping.
-    variables:
-      enabled:
-        description: If true, the ping will be sent.
-        type: Boolean
-        default: false
-    defaults:
-      - channel: nightly
-        value:
-          enabled: false
-      - channel: developer
-        value:
-          enabled: false
-
   growth-data:
     description: A feature measuring campaign growth data
     variables:
@@ -315,6 +300,14 @@ features:
         description: Determines the order of the onboarding page panels
         type: List<OnboardingPanel>
         default: ["themes", "toolbar-placement", "sync", "tcp", "privacy-notice"]
+
+  glean:
+    description: "A feature that provides server-side configurations for Glean metrics (aka Server Knobs)."
+    variables:
+      metrics-enabled:
+        description: "A map of metric base-identifiers to booleans representing the state of the 'enabled' flag for that metric."
+        type: Map<String, Boolean>
+        default: {}
 
 types:
   objects: {}
